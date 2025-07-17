@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Lengkap Keamanan API Signature</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Blue & Slate -->
+    <!-- Application Structure Plan: The SPA is restructured into thematic sections that map to the user's detailed slide-by-slide request. The navigation is expanded for better discoverability. New dedicated sections for 'Istilah' and 'Manajemen Kunci' are added to provide critical upfront information. The core 'Konsep Kunci' section is enhanced with detailed explanations and static examples before the interactive simulator, creating a 'learn then do' flow. The structure logically progresses from theory to practical examples, comparison, and recommendations, making the comprehensive information digestible. -->
+    <!-- Visualization & Content Choices: 1. Key Generation (Slide 8): Presented in styled code blocks for clarity and easy copying. Goal: Inform/Instruct. 2. Signature Overviews (Slides 5, 10): Detailed text breakdowns with highlighted components. Goal: Inform. 3. Minify/Hash Examples (Slides 6, 7): Static visual diagrams using HTML/CSS to explain the process before interaction. Goal: Teach. 4. Summary (Slide 14): Key formulas presented in distinct cards for easy recall. Goal: Summarize. All other choices from the previous version are maintained as they align with the user's request. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .nav-link { transition: color 0.3s, border-bottom-color 0.3s; }
+        .nav-link:hover { color: #2563eb; }
+        .nav-link.active { color: #2563eb; border-bottom-color: #2563eb; }
+        .tab-button { transition: all 0.3s; }
+        .tab-button.active { background-color: #2563eb; color: #ffffff; }
+        .tab-button:not(.active) { background-color: #e2e8f0; color: #334155; }
+        .card { transition: transform 0.3s, box-shadow 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .step-box { transition: all 0.2s ease-in-out; }
+        .step-box:hover { background-color: #dbeafe; border-color: #93c5fd; transform: scale(1.05); }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (max-width: 768px) { .chart-container { height: 300px; } }
+        [x-cloak] { display: none !important; }
+        .code-block { background-color: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; font-family: 'Courier New', Courier, monospace; overflow-x: auto; }
+        .code-block .comment { color: #94a3b8; }
+    </style>
+</head>
+<body x-data="{ activeSection: 'judul' }">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#judul" @click.prevent="document.getElementById('judul').scrollIntoView()" class="text-xl font-bold text-slate-800">Keamanan API</a>
+                <div class="hidden lg:flex items-baseline space-x-2">
+                    <a href="#judul" @click.prevent="document.getElementById('judul').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'judul' }">Judul</a>
+                    <a href="#pengenalan" @click.prevent="document.getElementById('pengenalan').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'pengenalan' }">Pengenalan</a>
+                    <a href="#alur-kerja" @click.prevent="document.getElementById('alur-kerja').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'alur-kerja' }">Alur Kerja</a>
+                    <a href="#istilah" @click.prevent="document.getElementById('istilah').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'istilah' }">Istilah</a>
+                    <a href="#manajemen-kunci" @click.prevent="document.getElementById('manajemen-kunci').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'manajemen-kunci' }">Manajemen Kunci</a>
+                    <a href="#konsep" @click.prevent="document.getElementById('konsep').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'konsep' }">Konsep Kunci</a>
+                    <a href="#perbandingan" @click.prevent="document.getElementById('perbandingan').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'perbandingan' }">Perbandingan</a>
+                    <a href="#ringkasan" @click.prevent="document.getElementById('ringkasan').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'ringkasan' }">Ringkasan</a>
+                    <a href="#rekomendasi" @click.prevent="document.getElementById('rekomendasi').scrollIntoView()" class="nav-link px-2 py-2 text-sm font-medium border-b-2 border-transparent" :class="{'active': activeSection === 'rekomendasi' }">Rekomendasi</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <!-- <section
+            id="judul"
+            class="h-screen flex flex-col justify-center items-center text-center bg-cover bg-center text-white"
+            style="background-image: url('assets/img/background-judul.png');"
+            x-intersect.threshold.0.5="activeSection = 'judul'"
+        >
+            <div class="bg-black bg-opacity-60 p-6 rounded">
+                <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
+                    API Security: Symmetric & Asymmetric Signature
+                </h1>
+                <p class="text-lg">
+                    oleh Delvian Christoper Kho - LMS Funds
+                </p>
+            </div>
+        </section> -->
+        <section
+            class="relative h-screen flex flex-col justify-center items-center text-center text-white bg-gradient-to-r from-indigo-700 to-indigo-900"
+        >
+            <!-- Wave SVG at bottom -->
+            <svg class="absolute bottom-0 w-full" viewBox="0 0 1440 320">
+                <path fill="#ffffff" fill-opacity="1"
+                    d="M0,224L48,218.7C96,213,192,203,288,176C384,149,480,107,576,106.7C672,107,768,149,864,165.3C960,181,1056,171,1152,144C1248,117,1344,75,1392,53.3L1440,32V320H0Z">
+                </path>
+            </svg>
+
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 z-10">
+                API Security: Symmetric & Asymmetric Signature
+            </h1>
+            <p class="text-lg z-10">
+                oleh Delvian Christoper Kho - LMS Funds
+            </p>
+        </section>
+
+        <div class="border-t border-slate-200 my-12"></div>
+
+        <section id="pengenalan" class="py-12" x-intersect.threshold.0.5="activeSection = 'pengenalan'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Pengenalan</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Memahami perbedaan mendasar antara kedua jenis signature.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <div class="bg-white p-8 rounded-xl shadow-lg card">
+                    <h3 class="text-2xl font-bold text-blue-600 mb-3">What Is Asymmetric Signature?</h3>
+                    <p class="text-slate-600 mb-4">Bayangkan Kita punya **kotak pos** (kunci publik) dan satu **kunci pribadi** yang hanya Kita pegang. Siapa pun bisa memasukkan surat, tetapi hanya Kita yang bisa membukanya. Ini membuktikan bahwa pesan itu benar-benar datang dari Kita.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg card">
+                    <h3 class="text-2xl font-bold text-teal-600 mb-3">What is Symmetric Signature?</h3>
+                    <p class="text-slate-600 mb-4">Bayangkan Kita dan teman Kita memiliki **kunci duplikat** untuk rumah yang sama (kunci rahasia). Kunci ini digunakan untuk mengunci dan membuka. Selama tidak ada yang mencuri kunci, komunikasi Kita aman.</p>
+                </div>
+            </div>
+             <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-6 rounded-r-lg max-w-4xl mx-auto">
+                <h4 class="font-bold text-lg mb-2">Why not just use Basic Auth or Bearer Token?</h4>
+                <p><strong>Basic Auth</strong> seperti menunjukkan KTP, mudah ditiru. <strong>Bearer Token</strong> seperti tiket konser, siapa pun yang memegangnya bisa masuk. **Signature** adalah lapisan tambahan seperti **segel lilin unik** pada surat penting. Ia memastikan isi surat (data transaksi) tidak diubah dan benar-benar dikirim oleh orang yang sah.</p>
+            </div>
+        </section>
+
+        <div class="border-t border-slate-200 my-12"></div>
+
+        <section id="alur-kerja" class="py-12" x-intersect.threshold.0.5="activeSection = 'alur-kerja'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">General Flow</h2>
+            </div>
+
+            <!-- ✅ Tambahan Gambar -->
+            <div class="mb-12 flex justify-center">
+                <img src="assets/img/payment-point-doku.png" alt="Flow Payment Point" class="max-w-full md:max-w-4xl rounded-lg shadow-lg border border-slate-200">
+            </div>
+
+            <!-- Flow Diagram Client & Server -->
+            <div class="flex flex-col md:flex-row items-stretch justify-center gap-4 md:gap-8 font-mono text-sm">
+                <div class="w-full md:w-2/5 bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-500 flex flex-col">
+                    <h4 class="font-bold text-lg mb-4 text-center text-blue-700">CLIENT (Aplikasi Kita)</h4>
+                    <div class="space-y-3 flex-grow flex flex-col justify-around">
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Data yang akan dikirim, biasanya dalam format JSON.">1. Siapkan Data (Request Body)</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Teks unik yang digabung dari berbagai komponen.">2. Buat "StringToSign"</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Gunakan kunci rahasia untuk mengenkripsi StringToSign.">3. Generate Signature</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Signature dilampirkan di header request.">4. Kirim Request + Signature</div>
+                    </div>
+                </div>
+                <div class="text-5xl text-slate-400 transform rotate-90 md:rotate-0 my-4 md:my-0 self-center">→</div>
+                <div class="w-full md:w-2/5 bg-white p-6 rounded-lg shadow-md border-t-4 border-teal-500 flex flex-col">
+                    <h4 class="font-bold text-lg mb-4 text-center text-teal-700">SERVER (Penyedia API)</h4>
+                    <div class="space-y-3 flex-grow flex flex-col justify-around">
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Server menerima request beserta data dan signature.">5. Terima Request</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Server membuat ulang StringToSign dari data yang diterima.">6. Buat Ulang "StringToSign"</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center" title="Server membandingkan signature client dengan miliknya.">7. Verifikasi Signature</div>
+                        <div class="step-box border-2 border-slate-300 p-3 rounded-md text-center font-bold" title="Jika cocok, proses. Jika tidak, tolak.">8. Cocok? (Proses / Tolak)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <div class="border-t border-slate-200 my-12"></div>
+        
+        <section id="istilah" class="py-12" x-intersect.threshold.0.5="activeSection = 'istilah'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Istilah dan Analogi</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Daftar istilah penting dalam dunia kriptografi dan signature, dijelaskan dengan sederhana.</p>
+            </div>
+            <div class="max-w-5xl mx-auto overflow-x-auto bg-white rounded-lg shadow-md">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Istilah</th>
+                            <th scope="col" class="px-6 py-3">Deskripsi</th>
+                            <th scope="col" class="px-6 py-3">Analogi Sederhana</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="px-6 py-4 font-bold">Hash</td>
+                            <td class="px-6 py-4">Sidik jari digital yang unik untuk memverifikasi integritas data.</td>
+                            <td class="px-6 py-4">Seperti <strong>sidik jari manusia</strong>. Setiap dokumen memiliki sidik jari unik. Jika dokumen diubah sedikit saja, sidik jarinya akan berubah total.</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-6 py-4 font-bold">SHA</td>
+                            <td class="px-6 py-4">Keluarga fungsi hash kriptografi yang aman dan terstandarisasi.</td>
+                            <td class="px-6 py-4">Ini adalah <strong>metode atau mesin standar</strong> (seperti cap jempol) untuk membuat sidik jari digital (hash) yang sangat sulit dipalsukan.</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-6 py-4 font-bold">PKCS</td>
+                            <td class="px-6 py-4">Kumpulan standar yang banyak digunakan untuk mengimplementasikan kriptografi kunci publik.</td>
+                            <td class="px-6 py-4">Seperti <strong>standar SNI</strong> pada produk. Ini adalah "aturan main" agar berbagai sistem kunci publik bisa saling "berbicara" dan kompatibel.</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-6 py-4 font-bold">RSA</td>
+                            <td class="px-6 py-4">Salah satu algoritma kriptografi kunci publik yang digunakan untuk enkripsi dan tanda tangan digital.</td>
+                            <td class="px-6 py-4">Ini adalah salah satu <strong>merek atau tipe mesin</strong> pembuat gembok dan kunci yang paling terkenal dan terpercaya (seperti merek gembok Yale).</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-6 py-4 font-bold">PEM</td>
+                            <td class="px-6 py-4">Format teks Base64 yang digunakan untuk menyimpan dan mengirimkan kunci kriptografi.</td>
+                            <td class="px-6 py-4">Ini adalah <strong>amplop standar</strong> untuk mengirim kunci secara aman. Isinya dikodekan agar tidak bisa langsung dibaca, seperti surat rahasia.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold">Hex Encode</td>
+                            <td class="px-6 py-4">Merepresentasikan data biner menggunakan karakter heksadesimal (0-9 dan a-f).</td>
+                            <td class="px-6 py-4">Seperti mengubah <strong>bahasa sandi (biner)</strong> menjadi bahasa yang lebih ringkas dan mudah ditulis (heksadesimal), meski masih perlu "diterjemahkan".</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="border-t border-slate-200 my-12"></div>
+        
+        <section id="manajemen-kunci" class="py-12" x-intersect.threshold.0.5="activeSection = 'manajemen-kunci'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Generate Keys Asymmetric</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Gunakan perintah OpenSSL berikut untuk membuat pasangan kunci privat dan publik.</p>
+            </div>
+            <div class="max-w-3xl mx-auto space-y-6">
+                <div>
+                    <h4 class="font-semibold mb-2">1. Generate private key:</h4>
+                    <div class="code-block">openssl genrsa -out private.key 2048</div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">2. Protect private key with passphrase (PKCS#8):</h4>
+                    <div class="code-block">openssl pkcs8 -topk8 -inform PEM -outform PEM -in private.key -out pkcs8.key -v1 PBE-SHA1-3DES</div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">3. Generate public key:</h4>
+                    <div class="code-block">openssl rsa -in private.key -outform PEM -pubout -out public.pem</div>
+                </div>
+            </div>
+        </section>
+        
+        <div class="border-t border-slate-200 my-12"></div>
+
+        <section id="konsep" class="py-12" x-intersect.threshold.0.5="activeSection = 'konsep'" x-data="signatureGenerator()">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Konsep Kunci & Simulasi</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Pelajari komponen dan alur pembuatan signature, lalu coba sendiri dengan simulator interaktif.</p>
+            </div>
+            
+            <div class="max-w-5xl mx-auto">
+                <div class="flex justify-center rounded-lg p-1 bg-slate-200 mb-8">
+                    <button @click="activeTab = 'asymmetric'" class="tab-button w-1/2 p-3 rounded-md font-semibold" :class="{'active': activeTab === 'asymmetric'}">Asymmetric Signature</button>
+                    <button @click="activeTab = 'symmetric'" class="tab-button w-1/2 p-3 rounded-md font-semibold" :class="{'active': activeTab === 'symmetric'}">Symmetric Signature</button>
+                </div>
+                
+                <div x-show="activeTab === 'asymmetric'" x-cloak>
+                    <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg space-y-8">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-3 text-blue-700">Asymmetric Signature Overview</h3>
+                            <p class="mb-4"><strong>Use Case:</strong> Get Token and Transactional APIs.</p>
+                            <p class="mb-2"><strong>Different StringToSign For Get Token and Transactional:</strong></p>
+                            <div class="space-y-2 text-sm mb-4">
+                                <div class="p-3 bg-slate-50 rounded-md"><strong>Get Token:</strong><br> `client_ID + "|" + X-TIMESTAMP`</div>
+                                <div class="p-3 bg-slate-50 rounded-md"><strong>Transactional:</strong><br> `HTTPMethod + ":" + EndpointUrl + ":" + Lowercase(HexEncode(SHA256(minify(RequestBody)))) + ":" + TimeStamp`</div>
+                            </div>
+                            <h4 class="text-lg font-semibold mb-2">Components:</h4>
+                            <div class="text-sm space-y-1">
+                                <p><strong>privateKey:</strong> Kunci privat milik merchant yang digunakan untuk membuat signature.</p>
+                                <p><strong>HTTPMethod:</strong> Metode request, contoh: `POST`, `GET`.</p>
+                                <p><strong>endpointURL:</strong> Path dari endpoint API, contoh: `/bi-snap-va/v1/transfer-va/create-va`.</p>
+                                <p><strong>Timestamp:</strong> Waktu request dalam format ISO8601, harus sama dengan header `X-TIMESTAMP`.</p>
+                                <p><strong>Minify requestBody:</strong> Hapus semua spasi dan baris baru dari body request JSON.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xl font-bold mb-3">Contoh Proses Hashing (untuk API Transaksional)</h4>
+                            <div class="flex flex-col md:flex-row items-center gap-4 text-center">
+                                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-1/3">
+                                    <h5 class="font-semibold">1. Minify Request Body</h5>
+                                    <p class="text-xs break-all">{"partnerReferenceNo":"123","amount":{"value":"10000.00"}}</p>
+                                </div>
+                                <div class="text-2xl text-slate-400">→</div>
+                                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-1/3">
+                                    <h5 class="font-semibold">2. SHA256 Hash</h5>
+                                    <p class="text-xs break-all">[Binary Data]</p>
+                                </div>
+                                <div class="text-2xl text-slate-400">→</div>
+                                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-1/3">
+                                    <h5 class="font-semibold">3. HexEncode & Lowercase</h5>
+                                    <p class="text-xs break-all">e5a3...c7f0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                             <h3 class="text-2xl font-bold mb-3 text-blue-700">Simulasi Interaktif (API Transaksional)</h3>
+                            <div class="mb-4">
+                                <label for="asymRequestBody" class="block text-sm font-medium text-slate-700 mb-1">1. Masukkan Request Body (JSON)</label>
+                                <textarea id="asymRequestBody" x-model="requestBody" rows="5" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                                <button @click="minify()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Minify</button>
+                                <button @click="calculateHash()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors" :disabled="!minifiedBody">Kalkulasi Hash</button>
+                                <button @click="generateAsymmetricSignature()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-md transition-colors" :disabled="!hashedBody">Generate Signature</button>
+                            </div>
+                            <div class="space-y-4 text-sm">
+                                <div x-show="minifiedBody"><h4 class="font-semibold">Hasil Minify:</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="minifiedBody"></code></pre></div>
+                                <div x-show="hashedBody"><h4 class="font-semibold">Hasil Hash:</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="hashedBody"></code></pre></div>
+                                <div x-show="finalSignature"><h4 class="font-semibold">Final StringToSign:</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="stringToSign"></code></pre><h4 class="font-semibold mt-2">Signature (SHA256withRSA):</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="finalSignature"></code></pre><p class="mt-2 text-xs text-slate-500">Signature ini kemudian ditambahkan ke header `X-SIGNATURE`.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="activeTab === 'symmetric'" x-cloak>
+                    <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg space-y-8">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-3 text-teal-700">Symmetric Signature Overview</h3>
+                            <p class="mb-4"><strong>Use Case:</strong> API Transaksional (setelah mendapatkan token).</p>
+                            <p class="mb-2"><strong>Komponen StringToSign:</strong></p>
+                             <div class="p-3 bg-slate-50 rounded-md text-sm mb-4">`HTTPMethod + ":" + EndpointUrl + ":" + AccessToken + ":" + Lowercase(HexEncode(SHA256(minify(RequestBody)))) + ":" + TimeStamp`</div>
+                            <h4 class="text-lg font-semibold mb-2">Components:</h4>
+                            <div class="text-sm space-y-1">
+                                <p><strong>clientSecret:</strong> Kunci rahasia bersama antara client dan server.</p>
+                                <p><strong>accessToken:</strong> Token yang didapat dari API Get Token.</p>
+                                <p><strong>HTTPMethod:</strong> Metode request, contoh: `POST`.</p>
+                                <p><strong>endpointURL:</strong> Path dari endpoint API.</p>
+                                <p><strong>Timestamp:</strong> Waktu request dalam format ISO8601.</p>
+                                <p><strong>Minify requestBody:</strong> Hapus semua spasi dan baris baru dari body request JSON.</p>
+                            </div>
+                        </div>
+                        <div>
+                             <h3 class="text-2xl font-bold mb-3 text-teal-700">Simulasi Interaktif</h3>
+                            <div class="mb-4">
+                                <label for="symRequestBody" class="block text-sm font-medium text-slate-700 mb-1">1. Masukkan Request Body (JSON)</label>
+                                <textarea id="symRequestBody" x-model="requestBody" rows="5" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500"></textarea>
+                            </div>
+                            <div class="grid sm:grid-cols-2 gap-4 mb-6">
+                                <button @click="minify(); calculateHash();" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Minify & Kalkulasi Hash</button>
+                                <button @click="generateSymmetricSignature()" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-2 px-4 rounded-md transition-colors" :disabled="!hashedBody">Generate Signature</button>
+                            </div>
+                            <div class="space-y-4 text-sm">
+                                <div x-show="hashedBody"><h4 class="font-semibold">Hasil Hash:</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="hashedBody"></code></pre></div>
+                                <div x-show="finalSignature"><h4 class="font-semibold">Final StringToSign:</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="stringToSign"></code></pre><h4 class="font-semibold mt-2">Signature (HMAC_SHA512):</h4><pre class="bg-slate-100 p-3 rounded-md overflow-x-auto"><code x-text="finalSignature"></code></pre></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lets-code" class="py-16 my-12 bg-slate-800 rounded-lg text-center">
+            <h2 class="text-5xl font-extrabold text-white">Let's Code!</h2>
+        </section>
+
+        <section id="perbandingan" class="py-12" x-intersect.threshold.0.5="activeSection = 'perbandingan'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Performa</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Perbedaan utama antara kedua metode signature.</p>
+            </div>
+            <div class="grid lg:grid-cols-5 gap-8 items-center">
+                <div class="lg:col-span-3 bg-white rounded-lg shadow-md overflow-hidden">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th class="px-6 py-3">Fitur</th><th class="px-6 py-3">Asymmetric</th><th class="px-6 py-3">Symmetric</th></tr></thead>
+                        <tbody>
+                            <tr class="border-b"><th class="px-6 py-4 font-medium">Kecepatan</th><td class="px-6 py-4">Lebih lambat (karena enkripsi/dekripsi kunci publik/privat)</td><td class="px-6 py-4">Lebih cepat (hanya kalkulasi hash dan HMAC)</td></tr>
+                            <tr class="border-b"><th class="px-6 py-4 font-medium">Keamanan</th><td class="px-6 py-4">Lebih aman jika kunci privat disimpan dengan baik</td><td class="px-6 py-4">Aman jika kunci rahasia tidak bocor</td></tr>
+                            <tr class="border-b"><th class="px-6 py-4 font-medium">Kompleksitas</th><td class="px-6 py-4">Lebih kompleks (memerlukan manajemen kunci publik/privat)</td><td class="px-6 py-4">Lebih sederhana (hanya satu kunci yang dikelola)</td></tr>
+                            <tr class="border-b"><th class="px-6 py-4 font-medium">Ukuran Signature</th><td class="px-6 py-4">Lebih panjang (karena format RSA)</td><td class="px-6 py-4">Lebih pendek (HMAC lebih ringkas)</td></tr>
+                            <tr><th class="px-6 py-4 font-medium">Paling Cocok Untuk</th><td class="px-6 py-4">Integrasi lintas domain, API publik</td><td class="px-6 py-4">Komunikasi internal, lingkungan terpercaya</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="lg:col-span-2"><div class="chart-container bg-white p-4 rounded-lg shadow-md"><canvas id="comparisonChart"></canvas></div></div>
+            </div>
+        </section>
+        
+        <div class="border-t border-slate-200 my-12"></div>
+
+        <section id="ringkasan" class="py-12" x-intersect.threshold.0.5="activeSection = 'ringkasan'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Summary</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Poin-poin kunci yang perlu diingat.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-md border-b-4 border-blue-500">
+                    <h4 class="font-bold text-lg mb-2">Asymmetric Signature</h4>
+                    <p class="text-sm">PrivateKey + SHA256withRSA</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-b-4 border-teal-500">
+                    <h4 class="font-bold text-lg mb-2">Symmetric Signature</h4>
+                    <p class="text-sm">clientSecret + HMAC_SHA512</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-b-4 border-slate-500">
+                    <h4 class="font-bold text-lg mb-2">Persyaratan Umum</h4>
+                    <p class="text-sm">Minified body, format StringToSign konsisten, URL & timestamp akurat.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="border-t border-slate-200 my-12"></div>
+        
+        <section id="rekomendasi" class="py-12" x-intersect.threshold.0.5="activeSection = 'rekomendasi'">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-3">Recommendation</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Kapan sebaiknya menggunakan masing-masing metode?</p>
+            </div>
+             <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg card border-l-4 border-blue-500">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-3">Asymmetric untuk Get Token</h3>
+                    <p class="text-slate-600">Mengurangi risiko merchant palsu karena client hanya mengenali public key yang terdaftar. Ini membangun **"kepercayaan awal"** yang kuat.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg card border-l-4 border-teal-500">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-3">Symmetric untuk Transaksi</h3>
+                    <p class="text-slate-600">Setelah token didapat, sudah ada "kontrak kepercayaan". Signature simetris **lebih cepat dan efisien** untuk transaksi selanjutnya.</p>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="mt-16 pt-8 border-t border-slate-200">
+            <div class="text-center text-sm text-slate-500">
+                 <h4 class="font-bold mb-2 text-base">Referensi:</h4>
+                <ul class="space-y-1 mb-6">
+                    <li><a href="https://github.com/bfi-finance/bfi-payment-api" target="_blank" class="text-blue-600 hover:underline">BFI Finance Payment API</a></li>
+                    <li><a href="https://developers.doku.com/getting-started-with-doku-api/signature-component/snap" target="_blank" class="text-blue-600 hover:underline">DOKU Developer Docs</a></li>
+                    <li><a href="https://www.ietf.org/" target="_blank" class="text-blue-600 hover:underline">IETF Standards</a></li>
+                </ul>
+                <p class="text-2xl font-bold my-4">Thank You!</p>
+                <p>&copy; 2025 PT BFI Finance Indonesia Tbk terdaftar dan diawasi OJK</p>
+            </div>
+        </footer>
+
+    </main>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Chart.js initialization
+            const chartCtx = document.getElementById('comparisonChart').getContext('2d');
+            new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Kecepatan', 'Keamanan', 'Kompleksitas', 'Ukuran Signature'],
+                    datasets: [{
+                        label: 'Asymmetric', data: [1, 4, 3, 3], 
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    }, {
+                        label: 'Symmetric', data: [4, 3, 1, 1], 
+                        backgroundColor: 'rgba(20, 184, 166, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: {
+                        callback: function(value) {
+                            const labels = ['', 'Rendah/Lambat', '', 'Sedang', 'Tinggi/Cepat'];
+                            return labels[value] || '';
+                        }
+                    }}},
+                    plugins: { legend: { position: 'top' }, tooltip: { enabled: true }, title: { display: true, text: 'Visualisasi Perbandingan Relatif' }}
+                }
+            });
+
+            // Intersection Observer for active navigation link
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // When an element is in view, update the activeSection in Alpine's data store
+                        document.body.__x.$data.activeSection = entry.target.id;
+                    }
+                });
+            }, { 
+                // This rootMargin means the trigger point is 50% from the top and 50% from the bottom of the viewport.
+                // This makes the link active when the section is centered in the view.
+                rootMargin: "-50% 0px -50% 0px", 
+                threshold: 0 
+            });
+
+            // Observe all main sections
+            document.querySelectorAll('main section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+
+        // Alpine.js component for signature simulation
+        function signatureGenerator() {
+            return {
+                activeTab: 'asymmetric',
+                requestBody: JSON.stringify({ partnerReferenceNo: "1234567890", amount: { value: "10000.00", currency: "IDR" }, validityPeriod: "2024-12-31T23:59:59+07:00" }, null, 4),
+                minifiedBody: '', 
+                hashedBody: '', 
+                stringToSign: '', 
+                finalSignature: '',
+                // Reset all output fields
+                reset() { 
+                    this.minifiedBody = ''; 
+                    this.hashedBody = ''; 
+                    this.stringToSign = ''; 
+                    this.finalSignature = ''; 
+                },
+                // Minify the JSON request body
+                minify() {
+                    this.reset();
+                    try { 
+                        // This removes all whitespace and newlines from the JSON string
+                        this.minifiedBody = JSON.stringify(JSON.parse(this.requestBody)); 
+                    } 
+                    catch(e) { 
+                        this.minifiedBody = 'Error: JSON tidak valid!'; 
+                    }
+                },
+                // Calculate the SHA-256 hash of the minified body
+                async calculateHash() {
+                    if (!this.minifiedBody || this.minifiedBody.startsWith('Error')) return;
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(this.minifiedBody);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    // Convert hash to a lowercase hex string
+                    this.hashedBody = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+                },
+                // Generate a mock asymmetric signature
+                generateAsymmetricSignature() {
+                    if (!this.hashedBody) return;
+                    const timestamp = new Date().toISOString();
+                    // Construct the StringToSign for a transactional API
+                    this.stringToSign = `POST:/bi-snap-va/v1/transfer-va/create-va:${this.hashedBody}:${timestamp}`;
+                    // Use a static, example signature for demonstration purposes
+                    this.finalSignature = 'qd2m9ot+cfq48qJ68+8IYdfkNDMA2hhecM2XegsnZ1Z5Fur9zii8BVm6cI7g1gyhL5/+OFZqAO8Kp0XPMdipfg==';
+                },
+                // Generate a mock symmetric signature
+                generateSymmetricSignature() {
+                    if (!this.hashedBody) return;
+                    const timestamp = new Date().toISOString();
+                    const accessToken = 'example_access_token_from_get_token_api';
+                    // Construct the StringToSign for a symmetric signature
+                    this.stringToSign = `POST:/bi-snap-va/v1/transfer-va/create-va:${accessToken}:${this.hashedBody}:${timestamp}`;
+                     // Use a static, example signature for demonstration purposes
+                    this.finalSignature = 'qd2m9ot+cfq48qJ68+8IYdfkNDMA2hhecM2XegsnZ1Z5Fur9zii8BVm6cI7g1gyhL5/+OFZqAO8Kp0XPMdipfg==';
+                },
+                // Initialize watchers
+                init() { 
+                    // When the requestBody or activeTab changes, reset the output fields
+                    this.$watch('requestBody', () => this.reset()); 
+                    this.$watch('activeTab', () => this.reset()); 
+                }
+            }
+        }
+    </script>
+</body>
+</html>
